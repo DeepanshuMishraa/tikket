@@ -5,15 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1746225014112,
-      "tag": "0000_daily_monster_badoon",
+      "when": 1746228580555,
+      "tag": "0000_loud_caretaker",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1746225080605,
-      "tag": "0001_abandoned_sersi",
+      "when": 1746228647908,
+      "tag": "0001_wooden_longshot",
       "breakpoints": true
     }
   ]

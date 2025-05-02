@@ -69,7 +69,7 @@ export default function Appbar() {
                   <Button
                     onClick={async () => {
                       await signIn.social({
-                        provider: "google"
+                        provider: "google",
                       })
                     }}
                     variant="outline"

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text('id').primaryKey(),
@@ -44,4 +44,32 @@ export const verification = pgTable("verification", {
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at'),
   updatedAt: timestamp('updated_at')
+});
+
+export const events = pgTable("events", {
+  id: text('id').primaryKey(),
+  organiserId: text('organiser_id').references(() => user.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  startTime: timestamp('start_time').notNull(),
+  endTime: timestamp('end_time'),
+  isTokenGated: boolean('is_token_gated').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const checkIn = pgTable("check_in", {
+  id: text('id').primaryKey(),
+  eventId: text('event_id').references(() => events.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+  checkInTime: timestamp('check_in_time').notNull(),
+});
+
+export const nftPasses = pgTable('nft_passes', {
+  id: text('id').primaryKey(),
+  eventId: text('event_id').references(() => events.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+  mintTXHash: text('mint_tx_hash').notNull(),
+  tokenId: text('token_id').notNull(),
+  claimed: boolean('claimed').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });

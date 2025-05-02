@@ -16,11 +16,15 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import "../app/wallet.css";
 import { clusterApiUrl } from "@solana/web3.js"
 import { useMemo } from "react";
+import { signIn, signOut, useSession } from "@/lib/auth.client";
+import { useRouter } from "next/navigation";
 
 export default function Appbar() {
 
   const endpoint = clusterApiUrl("devnet");
   const wallets = useMemo(() => [], []);
+  const { data: session } = useSession();
+  const router = useRouter()
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets}>
@@ -43,14 +47,38 @@ export default function Appbar() {
                   Explore Events
                   <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5" />
                 </Link>
+                {session?.user ? (
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl bg-gray-800 border-none hover:bg-gray-900 duration-300 text-gray-100"
-                >
-                  Sign in
-                </Button>
+                  <Button
+                    onClick={async () => {
+                      await signOut({
+                        fetchOptions: {
+                          onSuccess: () => {
+                            router.push("/");
+                          }
+                        }
+                      })
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl bg-gray-800 border-none hover:bg-gray-900 duration-300 text-gray-100"
+                  >
+                    Sign out
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={async () => {
+                      await signIn.social({
+                        provider: "google"
+                      })
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl bg-gray-800 border-none hover:bg-gray-900 duration-300 text-gray-100"
+                  >
+                    Sign in
+                  </Button>
+                )}
                 <WalletMultiButton className="!py-0" />
               </div>
             </div>

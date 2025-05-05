@@ -50,7 +50,7 @@ export default function Appbar() {
             <TikketIcon />
             <span className="font-semibold text-white">Tikket</span>
           </Link>
-          {pathName === "/events" && (
+          {pathName != "/" && (
             <div className="flex items-center gap-8 text-sm text-gray-300 justify-center">
               <Link href="/events" className="flex items-center justify-center gap-2">
                 <VideoIcon size={16} className="text-gray-300 hover:text-white transition-colors" />

@@ -155,3 +155,70 @@ export const saveWalletDetails = async (pubKey: string) => {
     }
   }
 }
+
+
+export const GetAllEvents = async () => {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers()
+    })
+
+    if (!session?.user) {
+      throw new Error("User not authorized")
+    }
+
+    const all_events = await db.select().from(events);
+
+    if (all_events.length === 0) {
+      return {
+        message: "No events found",
+        events: []
+      }
+    }
+
+    return {
+      message: "Events fetched successfully",
+      events: all_events
+    }
+  } catch (error) {
+    console.error("Error fetching all events:", error);
+    return {
+      message: "Error fetching all events",
+      error: error
+    }
+  }
+}
+
+
+export const GetEventByID = async (id: string) => {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers()
+    });
+
+    if (!session?.user) {
+      throw new Error("User not authorized");
+    }
+
+    const event = await db.select().from(events).where(eq(events.id, id));
+
+    if (event.length === 0) {
+      return {
+        message: "Event not found",
+        event: null
+      }
+    }
+
+    return {
+      status: 200,
+      event: event[0]
+    }
+  } catch (error) {
+    console.error("Error fetching event by ID:", error);
+    return {
+      message: "Error fetching event",
+      error: error,
+      status: 501,
+    }
+  }
+}

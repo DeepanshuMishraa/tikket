@@ -53,17 +53,51 @@ export default function EventsPage() {
     }
 
     return (
-      <div className="flex-1 p-6">
+      <div className="flex-1 px-6 pb-12">
         <div className="max-w-4xl mx-auto">
-          <ul>
+          <div className="grid grid-cols-1 gap-6">
             {data?.events.map((event: Event) => (
-              <li key={event.id} className="mb-4 p-4 border rounded-lg">
-                <h2 className="text-xl font-semibold">{event.title}</h2>
-                <p>{event.description}</p>
-                <p>{new Date(event.startTime).toLocaleString()}</p>
-              </li>
+              <div
+                key={event.id}
+                className="group relative overflow-hidden bg-gradient-to-br from-black/10 to-black/5 backdrop-blur-sm hover:from-black/20 hover:to-black/10 rounded-xl transition-all duration-300 border border-gray-800/50 hover:border-gray-700"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative p-6">
+                  <div className="flex flex-col space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h2 className="text-xl font-medium tracking-tight text-gray-100 group-hover:text-white transition-colors">{event.title}</h2>
+                        <time className="block mt-1 text-sm text-gray-400 group-hover:text-gray-300">
+                          {new Date(event.startTime).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </time>
+                      </div>
+                      <div className="shrink-0 h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500">
+                          <path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1-18 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p className="text-gray-400 group-hover:text-gray-300 line-clamp-2 text-sm leading-relaxed">{event.description}</p>
+                    <div className="pt-4 flex items-center space-x-4">
+                      <Button
+                        variant="outline"
+                        className="text-xs bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white transition-all duration-200"
+                        onClick={() => router.push(`/events/${event.id}`)}
+                      >
+                        View Details
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       </div>
     );

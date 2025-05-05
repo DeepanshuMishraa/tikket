@@ -2,7 +2,7 @@
 import Link from "next/link";
 import TikketIcon from "./icons/ticketIcon";
 import { Button } from "./ui/button";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, CompassIcon, VideoIcon } from "lucide-react";
 import {
   ConnectionProvider,
   WalletProvider,
@@ -17,7 +17,7 @@ import "../app/wallet.css";
 import { clusterApiUrl } from "@solana/web3.js"
 import { useMemo } from "react";
 import { signIn, signOut, useSession } from "@/lib/auth.client";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function Appbar() {
 
@@ -25,19 +25,35 @@ export default function Appbar() {
   const wallets = useMemo(() => [], []);
   const { data: session } = useSession();
   const router = useRouter()
+  const pathName = usePathname();
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets}>
         <WalletModalProvider>
           <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl">
             <div className="max-w-7xl mx-auto flex items-center justify-between p-4">
-              <Link
-                href="/"
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-              >
-                <TikketIcon />
-                <span className="font-semibold text-white">Tikket</span>
-              </Link>
+              <div className="flex  items-center gap-20">
+                <Link
+                  href="/"
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                >
+                  <TikketIcon />
+                  <span className="font-semibold text-white">Tikket</span>
+                </Link>
+                {pathName === "/events" && (
+                  <div className="flex items-center gap-8 text-sm text-gray-300 justify-center">
+                    <Link href="/events"  className="flex items-center justify-center gap-2">
+                      <VideoIcon size={16} className="text-gray-300 hover:text-white transition-colors" />
+                      Events
+                    </Link>
+
+                    <Link href="/discover" className="flex items-center justify-center gap-2">
+                      <CompassIcon size={16} className="text-gray-300 hover:text-white transition-colors" />
+                      Discover
+                    </Link>
+                  </div>
+                )}
+              </div>
 
               <div className="flex items-center gap-6">
                 <Link

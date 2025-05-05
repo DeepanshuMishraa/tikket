@@ -15,6 +15,13 @@
       "when": 1746228647908,
       "tag": "0001_wooden_longshot",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746422737760,
+      "tag": "0002_handy_yellowjacket",
+      "breakpoints": true
     }
   ]
 }

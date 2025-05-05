@@ -65,7 +65,7 @@ export default function Appbar() {
                 </Link>
                 {session?.user ? (
 
-                  <Button
+                <Button
                     onClick={async () => {
                       await signOut({
                         fetchOptions: {

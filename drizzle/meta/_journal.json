@@ -22,6 +22,34 @@
       "when": 1746422737760,
       "tag": "0002_handy_yellowjacket",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1746428717754,
+      "tag": "0003_hard_night_nurse",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1746429505023,
+      "tag": "0004_big_goblin_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1746430246894,
+      "tag": "0005_wandering_gamma_corps",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1746430400785,
+      "tag": "0006_foamy_supernaut",
+      "breakpoints": true
     }
   ]
 }

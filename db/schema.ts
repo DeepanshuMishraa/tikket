@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text('id').primaryKey(),
@@ -76,3 +76,13 @@ export const nftPasses = pgTable('nft_passes', {
   claimed: boolean('claimed').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+
+
+export const walletDetails = pgTable('wallet_details', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+  publicKey: text('public_key').notNull(),
+  solBalance: integer('sol_balance').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})

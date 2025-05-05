@@ -7,7 +7,7 @@ import { CreateEventSchema } from "@/lib/schema.zod";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers"
 import { v4 as uuid } from "uuid";
-import { Connection, clusterApiUrl, LAMPORTS_PER_SOL, } from "@solana/web3.js";
+import { Connection, clusterApiUrl, LAMPORTS_PER_SOL, PublicKey, } from "@solana/web3.js";
 
 
 export const getEventsForUser = async () => {
@@ -108,7 +108,7 @@ export const CreateEvent = async (data: unknown) => {
 }
 
 
-export const saveWalletDetails = async (pubKey) => {
+export const saveWalletDetails = async (pubKey: string) => {
   try {
     const session = await auth.api.getSession({
       headers: await headers()
@@ -119,15 +119,17 @@ export const saveWalletDetails = async (pubKey) => {
     }
     const userId = session?.user.id;
 
+    const publicKey = new PublicKey(pubKey)
+
     const connection = new Connection(clusterApiUrl("devnet"));
 
-    const balance = await connection.getBalance(pubKey);
+    const balance = await connection.getBalance(publicKey);
     const balanceInSol = balance / LAMPORTS_PER_SOL;
 
     await db.insert(walletDetails).values({
       id: uuid(),
       userId: userId,
-      publicKey: pubKey.toString(),
+      publicKey: pubKey,
       solBalance: balanceInSol,
     })
 

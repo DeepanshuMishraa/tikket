@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { events, walletDetails } from "@/db/schema";
 import { auth } from "@/lib/auth"
-import { CreateEventSchema } from "@/lib/schema.zod";
+import { createEventSchema } from "@/lib/schema.zod";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers"
 import { v4 as uuid } from "uuid";
@@ -57,7 +57,7 @@ export const CreateEvent = async (data: unknown) => {
 
     const userId = session?.user.id;
 
-    const parsedData = CreateEventSchema.safeParse(data);
+    const parsedData = createEventSchema.safeParse(data);
 
     if (!parsedData.success) {
       return {
@@ -66,7 +66,7 @@ export const CreateEvent = async (data: unknown) => {
       }
     }
 
-    const { title, description, startTime, endTime, isTokenGated, location } = parsedData.data;
+    const { title, description, startTime, endTime, isTokenGated, location, startDate, endDate } = parsedData.data;
     const eventId = uuid();
 
     await db.insert(events).values({
@@ -79,11 +79,14 @@ export const CreateEvent = async (data: unknown) => {
       id: eventId,
       organiserId: userId,
       participantsCount: "0",
-      participantId: userId
+      participantId: userId,
+      startDate,
+      endDate
     });
 
     return {
       message: "Event created successfully",
+      status: 200,
       event: {
         id: eventId,
         title,
@@ -102,7 +105,8 @@ export const CreateEvent = async (data: unknown) => {
     console.error("Error creating event:", error);
     return {
       message: "Error creating event",
-      error: error
+      error: error,
+      status: 501
     }
   }
 }

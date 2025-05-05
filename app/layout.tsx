@@ -4,6 +4,7 @@ import "./globals.css";
 import Appbar from "@/components/Appbar";
 import Footer from "@/components/footer";
 import QueryProvider, { SolanaProviders } from "./providers";
+import { Toaster } from "@/components/ui/sonner";
 
 
 const pop = Poppins({
@@ -37,6 +38,7 @@ export default function RootLayout({
               {children}
               <Footer />
             </main>
+            <Toaster theme="dark" />
           </QueryProvider>
         </SolanaProviders>
 

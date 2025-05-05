@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text('id').primaryKey(),
@@ -51,8 +51,10 @@ export const events = pgTable("events", {
   organiserId: text('organiser_id').references(() => user.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   description: text('description').notNull(),
-  startTime: timestamp('start_time').notNull(),
-  endTime: timestamp('end_time'),
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date').notNull(),
+  startTime: timestamp('start_time', { withTimezone: true }).notNull(),
+  endTime: timestamp('end_time', { withTimezone: true }).notNull(),
   isTokenGated: boolean('is_token_gated').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   participantsCount: text('participants_count').notNull().default('0'),
@@ -76,3 +78,13 @@ export const nftPasses = pgTable('nft_passes', {
   claimed: boolean('claimed').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+
+
+export const walletDetails = pgTable('wallet_details', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+  publicKey: text('public_key').notNull(),
+  solBalance: integer('sol_balance').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})

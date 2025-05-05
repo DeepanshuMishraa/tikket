@@ -55,6 +55,9 @@ export const events = pgTable("events", {
   endTime: timestamp('end_time'),
   isTokenGated: boolean('is_token_gated').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  participantsCount: text('participants_count').notNull().default('0'),
+  participantId: text('participant_id').references(() => user.id, { onDelete: 'cascade' }),
+  location: text('location'),
 });
 
 export const checkIn = pgTable("check_in", {

@@ -42,7 +42,7 @@ export default function Appbar() {
                 </Link>
                 {pathName === "/events" && (
                   <div className="flex items-center gap-8 text-sm text-gray-300 justify-center">
-                    <Link href="/events"  className="flex items-center justify-center gap-2">
+                    <Link href="/events" className="flex items-center justify-center gap-2">
                       <VideoIcon size={16} className="text-gray-300 hover:text-white transition-colors" />
                       Events
                     </Link>
@@ -58,7 +58,7 @@ export default function Appbar() {
               <div className="flex items-center gap-6">
                 <Link
                   href="/events"
-                  className="text-sm text-gray-300 hover:text-white transition-colors flex items-center gap-1"
+                  className={pathName === "/events" ? 'ext-sm text-gray-300 hover:text-white transition-colors hidden items-center gap-1' : 'ext-sm text-gray-300 hover:text-white transition-colors flex items-center gap-1'}
                 >
                   Explore Events
                   <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5" />

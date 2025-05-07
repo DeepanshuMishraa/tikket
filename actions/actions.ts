@@ -222,3 +222,43 @@ export const GetEventByID = async (id: string) => {
     }
   }
 }
+
+export const joinEvent = async (eventId: string)=>{
+  try{
+    const session = await auth.api.getSession({
+      headers:await headers()
+    });
+
+    if(!session?.user){
+      throw new Error("User not authorized")
+    }
+
+    const userId = session?.user.id;
+
+    const event = await db.select().from(events).where(eq(events.id, eventId));
+
+    if(event.length === 0){
+      throw new Error("Event not found")
+    }
+
+    const eventData = event[0];
+
+    //Todo: will do token gated logic 
+
+    await db.update(events).set({
+      participantsCount: eventData.participantsCount + 1,
+      participantId: userId
+    }).where(eq(events.id, eventId));
+
+    return {
+      message: "Event joined successfully",
+      status: 200
+    }
+  } catch (error) {
+    console.error("Error joining event:", error);
+    return {
+      message: "Error joining event",
+      error: error
+    }
+  }
+}

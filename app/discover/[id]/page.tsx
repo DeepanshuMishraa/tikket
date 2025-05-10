@@ -1,13 +1,13 @@
 "use client"
 
-import { GetEventByID, JoinEvent } from "@/actions/actions"
+import { GetEventByID, JoinEvent, saveWalletDetails } from "@/actions/actions"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
 import { MapPinIcon, ChevronRightIcon, XIcon, TwitterIcon, GlobeIcon, ExternalLinkIcon, LoaderIcon, CheckCircleIcon } from "lucide-react"
 import { useConnection, useWallet } from "@solana/wallet-adapter-react"
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import bs58 from "bs58"
@@ -38,6 +38,16 @@ export default function EventDetails({ params }: { params: { id: string } }) {
     },
   })
 
+  // Save wallet details when connected
+  useEffect(() => {
+    if (wallet.connected && wallet.publicKey) {
+      saveWalletDetails(wallet.publicKey.toBase58())
+        .catch(error => {
+          console.error("Failed to save wallet details:", error)
+        })
+    }
+  }, [wallet.connected, wallet.publicKey])
+
   const handleMintNFT = async () => {
     if (!wallet.connected || !data?.event || !wallet.publicKey || !wallet.signMessage) {
       toast.error("Please connect your wallet first")
@@ -47,14 +57,16 @@ export default function EventDetails({ params }: { params: { id: string } }) {
     setMinting(true)
     setTransactionStatus('pending')
     try {
-      const message = new TextEncoder().encode("Sign this message to mint your event NFT")
-      const signedMessage = await wallet.signMessage(message)
-      const walletSecretKey = bs58.encode(signedMessage)
+      // First save wallet details if not already saved
+      await saveWalletDetails(wallet.publicKey.toBase58())
+
+      // Sign message to verify wallet ownership
+      const message = new TextEncoder().encode(`Verify wallet ownership for event: ${data.event.title}`);
+      await wallet.signMessage(message);
 
       const result = await JoinEvent({
         eventId: id,
-        walletSecretKey
-      })
+      });
 
       if (result.status === 200 && result.nftDetails) {
         setTransactionStatus('confirmed')
@@ -71,7 +83,7 @@ export default function EventDetails({ params }: { params: { id: string } }) {
       }
     } catch (error) {
       console.error("Error minting NFT:", error)
-      toast.error("Failed to mint NFT ticket")
+      toast.error(error instanceof Error ? error.message : "Failed to mint NFT ticket")
       setTransactionStatus(null)
     } finally {
       setMinting(false)

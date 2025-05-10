@@ -14,6 +14,5 @@ export const createEventSchema = z.object({
 
 export const joinEventSchema = z.object({
   eventId: z.string().min(1, "Event ID is required"),
-  walletSecretKey: z.string().min(1, "Wallet secret key is required for signing the transaction"),
 });
 

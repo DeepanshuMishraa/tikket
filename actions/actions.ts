@@ -8,7 +8,8 @@ import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers"
 import { v4 as uuid } from "uuid";
 import { Connection, clusterApiUrl, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import { createEventNFT, NFTMetadata } from "@/lib/solana";
+import { createNFT } from "@/lib/nft";
+import path from "path";
 
 export const getEventsForUser = async () => {
   try {
@@ -227,7 +228,7 @@ export const JoinEvent = async (data: any) => {
       errors: parsedData.error.errors
     }
   }
-  const { eventId, walletSecretKey } = parsedData.data;
+  const { eventId } = parsedData.data;
 
   try {
     const session = await auth.api.getSession({
@@ -255,10 +256,6 @@ export const JoinEvent = async (data: any) => {
         status: 404
       }
     };
-
-    const walletAddress = wallet[0].publicKey;
-
-    // Check if user already has an NFT pass for this event
     const existingPass = await db.select()
       .from(nftPasses)
       .where(and(eq(nftPasses.eventId, eventId), eq(nftPasses.userId, userId)));
@@ -270,69 +267,47 @@ export const JoinEvent = async (data: any) => {
       }
     }
 
-    const connection = new Connection(clusterApiUrl("devnet"));
-    const recipientWallet = new PublicKey(walletAddress);
-
-    // Create metadata for the event NFT
-    const metadata: NFTMetadata = {
-      name: `${event[0].title} Ticket`,
-      symbol: "TIKT",
-      description: `Access pass for ${event[0].title} on ${new Date(event[0].startDate).toLocaleDateString()}`,
-      image: "ipfs://QmbXw6o2ieb4Xqi59HJhfikAMuZm9rMaBY3gDH3e23XSv4", // You should update this with your actual IPFS hash
-      attributes: [
-        {
-          trait_type: "Event ID",
-          value: eventId
-        },
-        {
-          trait_type: "Event Date",
-          value: new Date(event[0].startDate).toISOString()
-        },
-        {
-          trait_type: "User ID",
-          value: userId
-        }
-      ]
-    };
-
-    // Create NFT using UMI approach with user's wallet for signing
-    const nftResult = await createEventNFT(
-      connection,
+      // Create NFT with event metadata
+    const eventData = event[0];
+    const nftResult = await createNFT(
       {
-        publicKey: recipientWallet,
-        secretKey: Buffer.from(walletSecretKey, 'base64')
+        title: eventData.title,
+        description: eventData.description,
+        startDate: eventData.startDate,
+        endDate: eventData.endDate,
+        location: eventData.location || "TBA",
+        eventId: eventData.id,
       },
-      metadata
+      path.join(process.cwd(), "public", "nf.png")
     );
 
-    // Save NFT details
+    // Save NFT details to database
+    const nftPassId = uuid();
     await db.insert(nftPasses).values({
-      id: uuid(),
+      id: nftPassId,
       eventId: eventId,
       userId: userId,
-      mintTXHash: nftResult.explorerLink,
-      tokenId: nftResult.mint.toString(),
+      mintTXHash: nftResult.mint,
+      tokenId: nftResult.metadata,
       claimed: false,
+      createdAt: new Date(),
     });
 
     // Update event participants count
-    const currentCount = parseInt(event[0].participantsCount || "0");
+    const currentCount = parseInt(eventData.participantsCount) || 0;
     await db.update(events)
-      .set({
-        participantsCount: (currentCount + 1).toString(),
-        participantId: userId
-      })
+      .set({ participantsCount: (currentCount + 1).toString() })
       .where(eq(events.id, eventId));
 
     return {
-      message: "Successfully joined event and minted NFT ticket",
       status: 200,
+      message: "Successfully joined event",
       nftDetails: {
-        mint: nftResult.mint.toString(),
-        metadata: nftResult.metadata.toString(),
+        mint: nftResult.mint,
+        metadata: nftResult.metadata,
         explorerLink: nftResult.explorerLink
       }
-    }
+    };
 
   } catch (error) {
     console.error("Error joining event:", error);

@@ -1,14 +1,14 @@
 "use server";
 
 import { db } from "@/db";
-import { events, walletDetails } from "@/db/schema";
+import { events, walletDetails, nftPasses } from "@/db/schema";
 import { auth } from "@/lib/auth"
-import { createEventSchema } from "@/lib/schema.zod";
-import { eq } from "drizzle-orm";
+import { createEventSchema, joinEventSchema } from "@/lib/schema.zod";
+import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers"
 import { v4 as uuid } from "uuid";
-import { Connection, clusterApiUrl, LAMPORTS_PER_SOL, PublicKey, } from "@solana/web3.js";
-
+import { Connection, clusterApiUrl, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { createEventNFT, NFTMetadata } from "@/lib/solana";
 
 export const getEventsForUser = async () => {
   try {
@@ -43,7 +43,6 @@ export const getEventsForUser = async () => {
     }
   }
 }
-
 
 export const CreateEvent = async (data: unknown) => {
   try {
@@ -111,7 +110,6 @@ export const CreateEvent = async (data: unknown) => {
   }
 }
 
-
 export const saveWalletDetails = async (pubKey: string) => {
   try {
     const session = await auth.api.getSession({
@@ -156,7 +154,6 @@ export const saveWalletDetails = async (pubKey: string) => {
   }
 }
 
-
 export const GetAllEvents = async () => {
   try {
     const session = await auth.api.getSession({
@@ -188,7 +185,6 @@ export const GetAllEvents = async () => {
     }
   }
 }
-
 
 export const GetEventByID = async (id: string) => {
   try {
@@ -223,42 +219,127 @@ export const GetEventByID = async (id: string) => {
   }
 }
 
-export const joinEvent = async (eventId: string)=>{
-  try{
+export const JoinEvent = async (data: any) => {
+  const parsedData = joinEventSchema.safeParse(data);
+  if (!parsedData.success) {
+    return {
+      message: "Invalid data",
+      errors: parsedData.error.errors
+    }
+  }
+  const { eventId, walletSecretKey } = parsedData.data;
+
+  try {
     const session = await auth.api.getSession({
-      headers:await headers()
+      headers: await headers()
     });
 
-    if(!session?.user){
-      throw new Error("User not authorized")
-    }
+    if (!session?.user) {
+      throw new Error("User not authorized");
+    };
 
     const userId = session?.user.id;
-
     const event = await db.select().from(events).where(eq(events.id, eventId));
 
-    if(event.length === 0){
-      throw new Error("Event not found")
+    if (event.length === 0) {
+      return {
+        message: "Event not found",
+        status: 404
+      }
     }
 
-    const eventData = event[0];
+    const wallet = await db.select().from(walletDetails).where(eq(walletDetails.userId, userId));
+    if (wallet.length === 0) {
+      return {
+        message: "Wallet not found",
+        status: 404
+      }
+    };
 
-    //Todo: will do token gated logic 
+    const walletAddress = wallet[0].publicKey;
 
-    await db.update(events).set({
-      participantsCount: eventData.participantsCount + 1,
-      participantId: userId
-    }).where(eq(events.id, eventId));
+    // Check if user already has an NFT pass for this event
+    const existingPass = await db.select()
+      .from(nftPasses)
+      .where(and(eq(nftPasses.eventId, eventId), eq(nftPasses.userId, userId)));
+
+    if (existingPass.length > 0) {
+      return {
+        message: "You have already joined this event",
+        status: 400
+      }
+    }
+
+    const connection = new Connection(clusterApiUrl("devnet"));
+    const recipientWallet = new PublicKey(walletAddress);
+
+    // Create metadata for the event NFT
+    const metadata: NFTMetadata = {
+      name: `${event[0].title} Ticket`,
+      symbol: "TIKT",
+      description: `Access pass for ${event[0].title} on ${new Date(event[0].startDate).toLocaleDateString()}`,
+      image: "ipfs://QmbXw6o2ieb4Xqi59HJhfikAMuZm9rMaBY3gDH3e23XSv4", // You should update this with your actual IPFS hash
+      attributes: [
+        {
+          trait_type: "Event ID",
+          value: eventId
+        },
+        {
+          trait_type: "Event Date",
+          value: new Date(event[0].startDate).toISOString()
+        },
+        {
+          trait_type: "User ID",
+          value: userId
+        }
+      ]
+    };
+
+    // Create NFT using UMI approach with user's wallet for signing
+    const nftResult = await createEventNFT(
+      connection,
+      {
+        publicKey: recipientWallet,
+        secretKey: Buffer.from(walletSecretKey, 'base64')
+      },
+      metadata
+    );
+
+    // Save NFT details
+    await db.insert(nftPasses).values({
+      id: uuid(),
+      eventId: eventId,
+      userId: userId,
+      mintTXHash: nftResult.explorerLink,
+      tokenId: nftResult.mint.toString(),
+      claimed: false,
+    });
+
+    // Update event participants count
+    const currentCount = parseInt(event[0].participantsCount || "0");
+    await db.update(events)
+      .set({
+        participantsCount: (currentCount + 1).toString(),
+        participantId: userId
+      })
+      .where(eq(events.id, eventId));
 
     return {
-      message: "Event joined successfully",
-      status: 200
+      message: "Successfully joined event and minted NFT ticket",
+      status: 200,
+      nftDetails: {
+        mint: nftResult.mint.toString(),
+        metadata: nftResult.metadata.toString(),
+        explorerLink: nftResult.explorerLink
+      }
     }
+
   } catch (error) {
     console.error("Error joining event:", error);
     return {
       message: "Error joining event",
-      error: error
+      error: error,
+      status: 501
     }
   }
 }

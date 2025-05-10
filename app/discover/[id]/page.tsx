@@ -1,14 +1,22 @@
 "use client"
 
-import { GetEventByID } from "@/actions/actions"
+import { GetEventByID, JoinEvent } from "@/actions/actions"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
-import { MapPinIcon, ChevronRightIcon, XIcon, TwitterIcon, GlobeIcon } from "lucide-react"
+import { MapPinIcon, ChevronRightIcon, XIcon, TwitterIcon, GlobeIcon, ExternalLinkIcon, LoaderIcon, CheckCircleIcon } from "lucide-react"
 import { useConnection, useWallet } from "@solana/wallet-adapter-react"
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
 import { useState } from "react"
 import { Separator } from "@/components/ui/separator"
+import { toast } from "sonner"
+import bs58 from "bs58"
+
+interface NFTDetails {
+  mint: string;
+  metadata: string;
+  explorerLink: string;
+}
 
 export default function EventDetails({ params }: { params: { id: string } }) {
   const { id } = params
@@ -16,6 +24,8 @@ export default function EventDetails({ params }: { params: { id: string } }) {
   const wallet = useWallet()
   const [minting, setMinting] = useState(false)
   const [registered, setRegistered] = useState(false)
+  const [nftDetails, setNftDetails] = useState<NFTDetails | null>(null)
+  const [transactionStatus, setTransactionStatus] = useState<'pending' | 'confirmed' | null>(null)
 
   const { isLoading, isError, data } = useQuery({
     queryKey: ["event", id],
@@ -29,18 +39,40 @@ export default function EventDetails({ params }: { params: { id: string } }) {
   })
 
   const handleMintNFT = async () => {
-    if (!wallet.connected || !data?.event) return
+    if (!wallet.connected || !data?.event || !wallet.publicKey || !wallet.signMessage) {
+      toast.error("Please connect your wallet first")
+      return
+    }
+
     setMinting(true)
+    setTransactionStatus('pending')
     try {
-      // NFT minting logic would go here
-      // For example:
-      // await mintEventNFT(connection, wallet, data.event.id);
-      console.log("NFT minting would happen here")
-      setTimeout(() => {
+      const message = new TextEncoder().encode("Sign this message to mint your event NFT")
+      const signedMessage = await wallet.signMessage(message)
+      const walletSecretKey = bs58.encode(signedMessage)
+
+      const result = await JoinEvent({
+        eventId: id,
+        walletSecretKey
+      })
+
+      if (result.status === 200 && result.nftDetails) {
+        setTransactionStatus('confirmed')
+        toast.success("Successfully registered for the event!")
         setRegistered(true)
-      }, 1500)
+        setNftDetails({
+          mint: result.nftDetails.mint,
+          metadata: result.nftDetails.metadata,
+          explorerLink: result.nftDetails.explorerLink
+        })
+      } else {
+        setTransactionStatus(null)
+        toast.error(result.message || "Failed to register for the event")
+      }
     } catch (error) {
       console.error("Error minting NFT:", error)
+      toast.error("Failed to mint NFT ticket")
+      setTransactionStatus(null)
     } finally {
       setMinting(false)
     }
@@ -70,23 +102,75 @@ export default function EventDetails({ params }: { params: { id: string } }) {
   const startTime = new Date(event.startTime)
   const endTime = new Date(event.endTime)
 
+  const renderTransactionStatus = () => {
+    if (!transactionStatus) return null;
+
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        {transactionStatus === 'pending' ? (
+          <>
+            <LoaderIcon className="w-4 h-4 animate-spin text-white" />
+            <span>Minting your NFT ticket...</span>
+          </>
+        ) : (
+          <>
+            <CheckCircleIcon className="w-4 h-4 text-green-400" />
+            <span>NFT minted successfully!</span>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const renderNFTDetails = () => {
+    if (!nftDetails) return null;
+
+    return (
+      <div className="mt-4 space-y-4">
+        <div className="bg-gray-800/50 p-4 rounded-lg">
+          <h4 className="text-sm font-medium mb-3">Your NFT Ticket Details</h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400">Token Address</span>
+              <a
+                href={nftDetails.explorerLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-blue-400 hover:text-blue-300"
+              >
+                {nftDetails.mint.slice(0, 8)}...{nftDetails.mint.slice(-8)}
+                <ExternalLinkIcon className="w-3 h-3" />
+              </a>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400">Status</span>
+              <span className="text-green-400">Confirmed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-black mt-18 text-white">
       <div className="max-w-6xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-5 gap-12">
         {/* Event Card - Left Side */}
         <div className="md:col-span-2 flex flex-col">
           <div className="bg-[#0a0a5e] p-8 rounded-lg flex flex-col h-full">
-            <div className="flex items-center justify-center mb-8">
-              <div className="flex items-center space-x-4">
-                <img src="https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,background=white,quality=75,width=280,height=280/event-covers/6s/2d94b29a-676a-44ed-80ed-53780cb50dca.png" alt="Air Street Capital" className="h-20" />
+            <div className="text-center mb-4">
+              <div className="flex items-center justify-center">
+                <img src="https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,background=white,quality=75,width=280,height=280/event-covers/6s/2d94b29a-676a-44ed-80ed-53780cb50dca.png" alt="Event Cover" className="h-20" />
               </div>
             </div>
 
+            {/* Location information */}
             <div className="text-center mb-4">
-              {event.url && (
-                <a href={event.url} className="text-white hover:underline">
-                  {event.url}
-                </a>
+              {event.location && (
+                <div className="text-white">
+                  <MapPinIcon className="w-4 h-4 inline mr-1" />
+                  {event.location}
+                </div>
               )}
             </div>
           </div>
@@ -246,23 +330,27 @@ export default function EventDetails({ params }: { params: { id: string } }) {
 
             <div className="space-y-4">
               {registered ? (
-                <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 text-center">
+                <div className="bg-green-900/20 border border-green-800 rounded-lg p-4">
                   <div className="text-green-400 font-medium mb-2">Successfully registered!</div>
-                  <p className="text-sm text-gray-300">Your NFT has been minted to your wallet.</p>
+                  <p className="text-sm text-gray-300">Your NFT ticket has been minted to your wallet.</p>
+                  {renderNFTDetails()}
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row gap-4">
-                  {!wallet.connected ? (
-                    <WalletMultiButton className="!bg-white !text-black hover:!bg-gray-200 !rounded-lg !font-medium !py-2 !border-none !w-full sm:!w-auto" />
-                  ) : (
-                    <Button
-                      onClick={handleMintNFT}
-                      disabled={minting}
-                      className="bg-white text-black hover:bg-gray-200 rounded-lg font-medium py-2 w-full sm:w-auto"
-                    >
-                      {minting ? "Minting NFT..." : "Join Waitlist"}
-                    </Button>
-                  )}
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {!wallet.connected ? (
+                      <WalletMultiButton className="!bg-white !text-black hover:!bg-gray-200 !rounded-lg !font-medium !py-2 !border-none !w-full sm:!w-auto" />
+                    ) : (
+                      <Button
+                        onClick={handleMintNFT}
+                        disabled={minting}
+                        className="bg-white text-black hover:bg-gray-200 rounded-lg font-medium py-2 w-full sm:w-auto"
+                      >
+                        {minting ? "Minting NFT Ticket..." : "Join Event"}
+                      </Button>
+                    )}
+                  </div>
+                  {renderTransactionStatus()}
                 </div>
               )}
             </div>

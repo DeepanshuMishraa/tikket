@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AuroraText } from "./magicui/aurora-text";
 import Iphone15Pro from "./magicui/iphone-15-pro";
 import { Button } from "./ui/button";
@@ -11,10 +12,11 @@ export default function Hero() {
           <AuroraText>start here.</AuroraText></h1>
         <p>Set up an event page, invite friends and<br /> sell tickets. Host a memorable event <br /> today.</p>
 
-        <Button variant={null} className="bg-white text-black rounded-xl hover:bg-gray-100 duration-200 cursor-pointer">Create Your First Event</Button>
+        <Link href="/events/create">        <Button variant={null} className="bg-white text-black rounded-xl hover:bg-gray-100 duration-200 cursor-pointer">Create Your First Event</Button>
+        </Link>
       </div>
       <div className="">
-        <Iphone15Pro  src="/mock.png" width={433} height={500} />
+        <Iphone15Pro src="/mock.png" width={433} height={500} />
       </div>
     </div>
   )

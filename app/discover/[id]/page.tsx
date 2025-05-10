@@ -1,16 +1,16 @@
 "use client"
 
-import { GetEventByID, JoinEvent, saveWalletDetails } from "@/actions/actions"
+import { GetEventByID, getEventDetails, JoinEvent, saveWalletDetails } from "@/actions/actions"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
-import { MapPinIcon, ChevronRightIcon, XIcon, TwitterIcon, GlobeIcon, ExternalLinkIcon, LoaderIcon, CheckCircleIcon } from "lucide-react"
-import { useConnection, useWallet } from "@solana/wallet-adapter-react"
+import { MapPinIcon, ChevronRightIcon, XIcon, TwitterIcon, GlobeIcon, ExternalLinkIcon, LoaderIcon, CheckCircleIcon, CalendarIcon, ClockIcon } from "lucide-react"
+import { useWallet } from "@solana/wallet-adapter-react"
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
 import { useState, useEffect } from "react"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import bs58 from "bs58"
+
 
 interface NFTDetails {
   mint: string;
@@ -20,7 +20,6 @@ interface NFTDetails {
 
 export default function EventDetails({ params }: { params: { id: string } }) {
   const { id } = params
-  const { connection } = useConnection()
   const wallet = useWallet()
   const [minting, setMinting] = useState(false)
   const [registered, setRegistered] = useState(false)
@@ -38,7 +37,17 @@ export default function EventDetails({ params }: { params: { id: string } }) {
     },
   })
 
-  // Save wallet details when connected
+  const query = useQuery({
+    queryKey: ["event-details", id],
+    queryFn: async () => {
+      const res = await getEventDetails(id);
+      if (res.status != 200) {
+        toast.error(res.message || "Failed to fetch event details");
+      }
+      return res;
+    }
+  })
+
   useEffect(() => {
     if (wallet.connected && wallet.publicKey) {
       saveWalletDetails(wallet.publicKey.toBase58())
@@ -110,13 +119,20 @@ export default function EventDetails({ params }: { params: { id: string } }) {
   }
 
   const { event } = data
+  // Parse dates with proper timezone handling
   const eventDate = new Date(event.startDate)
   const startTime = new Date(event.startTime)
   const endTime = new Date(event.endTime)
 
+  const { data: eventDetails } = query
+
+  // Format date with leading zeros for day
+  const formatDay = (date: Date) => {
+    return format(date, "d").padStart(2, '0')
+  }
+
   const renderTransactionStatus = () => {
     if (!transactionStatus) return null;
-
     return (
       <div className="flex items-center gap-2 text-sm">
         {transactionStatus === 'pending' ? (
@@ -136,246 +152,165 @@ export default function EventDetails({ params }: { params: { id: string } }) {
 
   const renderNFTDetails = () => {
     if (!nftDetails) return null;
-
     return (
-      <div className="mt-4 space-y-4">
-        <div className="bg-gray-800/50 p-4 rounded-lg">
-          <h4 className="text-sm font-medium mb-3">Your NFT Ticket Details</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400">Token Address</span>
-              <a
-                href={nftDetails.explorerLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-blue-400 hover:text-blue-300"
-              >
-                {nftDetails.mint.slice(0, 8)}...{nftDetails.mint.slice(-8)}
-                <ExternalLinkIcon className="w-3 h-3" />
-              </a>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400">Status</span>
-              <span className="text-green-400">Confirmed</span>
-            </div>
-          </div>
+      <div className="mt-4 border border-gray-800 rounded-lg p-4">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-400">Token Address</span>
+          <a
+            href={nftDetails.explorerLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-blue-400 hover:text-blue-300"
+          >
+            {nftDetails.mint.slice(0, 8)}...{nftDetails.mint.slice(-8)}
+            <ExternalLinkIcon className="w-3 h-3" />
+          </a>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-black mt-18 text-white">
-      <div className="max-w-6xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-5 gap-12">
-        {/* Event Card - Left Side */}
-        <div className="md:col-span-2 flex flex-col">
-          <div className="bg-[#0a0a5e] p-8 rounded-lg flex flex-col h-full">
-            <div className="text-center mb-4">
-              <div className="flex items-center justify-center">
-                <img src="https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,background=white,quality=75,width=280,height=280/event-covers/6s/2d94b29a-676a-44ed-80ed-53780cb50dca.png" alt="Event Cover" className="h-20" />
-              </div>
-            </div>
+    <div className="min-h-screen bg-black text-white">
+      <div className="max-w-[1000px] mx-auto px-6 pt-28 pb-16">
+        <div className="mb-16">
+          <h1 className="text-[32px] leading-tight font-normal tracking-[-0.02em] mb-8">
+            {eventDetails?.title || event.title}
+          </h1>
 
-            {/* Location information */}
-            <div className="text-center mb-4">
-              {event.location && (
-                <div className="text-white">
-                  <MapPinIcon className="w-4 h-4 inline mr-1" />
-                  {event.location}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-6 space-y-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-[#0a0a5e] rounded-md flex items-center justify-center text-xs text-white">
-                <img
-                  src="/placeholder.svg?height=40&width=40"
-                  alt="Air Street"
-                  className="w-full h-full object-cover rounded-md"
-                />
-              </div>
-              <div>
-                <div className="text-gray-400 text-sm">Presented by</div>
-                <div className="flex items-center space-x-1">
-                  <span>Air Street events</span>
-                  <ChevronRightIcon className="w-4 h-4" />
-                </div>
-              </div>
-            </div>
-
-            <p className="text-sm text-gray-400">
-              AI events around the world organized by Air Street Capital and Nathan Benaich.
-            </p>
-
-            <div className="flex space-x-3">
-              <TwitterIcon className="w-5 h-5" />
-              <GlobeIcon className="w-5 h-5" />
-            </div>
-
-            <div>
-              <h3 className="text-lg font-medium mb-4">Hosted By</h3>
-              <Separator className="my-4 bg-gray-800" />
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden">
-                      <img
-                        src="/placeholder.svg?height=32&width=32"
-                        alt="Nathan Benaich"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span>Nathan Benaich (Air Street)</span>
-                  </div>
-                  <XIcon className="w-5 h-5" />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden">
-                      <img
-                        src="/placeholder.svg?height=32&width=32"
-                        alt="Faris Sbahi"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span>Faris Sbahi</span>
-                  </div>
-                  <XIcon className="w-5 h-5" />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden">
-                      <img
-                        src="/placeholder.svg?height=32&width=32"
-                        alt="Chloe Glasgow"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span>Chloe Glasgow</span>
-                  </div>
-                  <XIcon className="w-5 h-5" />
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-2">
-                <button className="text-gray-400 hover:text-white text-sm">Contact the Host</button>
-                <div className="h-px bg-gray-800"></div>
-                <button className="text-gray-400 hover:text-white text-sm">Report Event</button>
-              </div>
+          <div className="flex items-center space-x-6 text-[15px] text-gray-300">
+            <time className="flex items-center">
+              <CalendarIcon className="w-[18px] h-[18px] mr-2 text-gray-500" />
+              {format(eventDate, "MMMM")} {formatDay(eventDate)}
+            </time>
+            <time className="flex items-center">
+              <ClockIcon className="w-[18px] h-[18px] mr-2 text-gray-500" />
+              {format(startTime, "h:mm a")}
+            </time>
+            <div className="flex items-center">
+              <MapPinIcon className="w-[18px] h-[18px] mr-2 text-gray-500" />
+              {eventDetails?.location || "Location TBA"}
             </div>
           </div>
         </div>
 
-        {/* Event Details - Right Side */}
-        <div className="md:col-span-3 space-y-8">
-          <div className="flex items-center space-x-2 text-sm text-gray-400">
-            <div className="bg-teal-500/20 text-teal-400 p-1 rounded">
-              <GlobeIcon className="w-4 h-4" />
-            </div>
-            <span>Featured in New York</span>
-            <ChevronRightIcon className="w-4 h-4" />
-          </div>
-
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{event.title}</h1>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex items-start gap-3">
-              <div className="bg-gray-800 p-2 rounded-md flex flex-col items-center justify-center min-w-14">
-                <div className="text-xs text-gray-400 uppercase">MAY</div>
-                <div className="text-xl font-bold">{format(eventDate, "d")}</div>
-              </div>
+        <div className="grid grid-cols-12 gap-12">
+          <div className="col-span-8">
+            <div className="space-y-12">
               <div>
-                <div>{format(eventDate, "EEEE, MMMM d")}</div>
-                <div className="text-gray-400">
-                  {format(startTime, "h:mm a")} - {format(endTime, "h:mm a")} EDT
+                <h2 className="text-[15px] font-medium uppercase tracking-wider text-gray-400 mb-4">About this event</h2>
+                <div className="text-[15px] leading-relaxed text-gray-300 space-y-4">
+                  {eventDetails?.description}
                 </div>
               </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="bg-gray-800 p-2 rounded-md">
-                <MapPinIcon className="w-5 h-5 text-gray-400" />
+              <div>
+                <h2 className="text-[15px] font-medium uppercase tracking-wider text-gray-400 mb-4">What to expect</h2>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="p-4 bg-gray-900/30 rounded-lg">
+                    <div className="text-[15px] font-medium mb-2">Networking</div>
+                    <p className="text-[14px] text-gray-400">Connect with industry professionals and like-minded individuals</p>
+                  </div>
+                  <div className="p-4 bg-gray-900/30 rounded-lg">
+                    <div className="text-[15px] font-medium mb-2">Discussions</div>
+                    <p className="text-[14px] text-gray-400">Engage in meaningful conversations about blockchain and web3</p>
+                  </div>
+                </div>
               </div>
               <div>
-                <div>Register to See Address</div>
-                <div className="text-gray-400">New York, New York</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-900 rounded-lg p-6">
-            <h3 className="text-lg font-medium mb-4">Registration</h3>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-1 bg-gray-800 rounded">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="lucide lucide-ticket"
-                >
-                  <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
-                  <path d="M13 5v2" />
-                  <path d="M13 17v2" />
-                  <path d="M13 11v2" />
-                </svg>
-              </div>
-              <span className="font-medium">Event Full</span>
-            </div>
-            <div className="text-sm text-gray-300 mb-4">
-              {registered
-                ? "You've successfully registered for this event."
-                : "If you'd like, you can join the waitlist."}
-            </div>
-
-            <div className="space-y-4">
-              {registered ? (
-                <div className="bg-green-900/20 border border-green-800 rounded-lg p-4">
-                  <div className="text-green-400 font-medium mb-2">Successfully registered!</div>
-                  <p className="text-sm text-gray-300">Your NFT ticket has been minted to your wallet.</p>
-                  {renderNFTDetails()}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row gap-4">
+                <h2 className="text-[15px] font-medium uppercase tracking-wider text-gray-400 mb-4">Registration</h2>
+                {registered ? (
+                  <div className="space-y-4">
+                    <div className="inline-flex items-center px-3 py-1.5 bg-green-900/20 text-green-400 text-sm rounded-full">
+                      <CheckCircleIcon className="w-4 h-4 mr-1.5" />
+                      Registration confirmed
+                    </div>
+                    {renderNFTDetails()}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
                     {!wallet.connected ? (
-                      <WalletMultiButton className="!bg-white !text-black hover:!bg-gray-200 !rounded-lg !font-medium !py-2 !border-none !w-full sm:!w-auto" />
+                      <WalletMultiButton className="!bg-white !text-black hover:!bg-gray-50 !rounded-full !py-2.5 !px-6 !text-sm !font-medium !transition-colors" />
                     ) : (
                       <Button
                         onClick={handleMintNFT}
                         disabled={minting}
-                        className="bg-white text-black hover:bg-gray-200 rounded-lg font-medium py-2 w-full sm:w-auto"
+                        className="bg-white text-black hover:bg-gray-50 rounded-full py-2.5 px-6 text-sm font-medium transition-colors inline-flex items-center"
                       >
-                        {minting ? "Minting NFT Ticket..." : "Join Event"}
+                        {minting ? (
+                          <>
+                            <LoaderIcon className="w-4 h-4 mr-2 animate-spin" />
+                            Confirming registration...
+                          </>
+                        ) : (
+                          "Register for event"
+                        )}
                       </Button>
                     )}
+                    {renderTransactionStatus()}
                   </div>
-                  {renderTransactionStatus()}
+                )}
+              </div>
+              <div>
+                <h2 className="text-[15px] font-medium uppercase tracking-wider text-gray-400 mb-4">Additional Information</h2>
+                <div className="space-y-4 text-[15px] text-gray-300">
+                  <div className="p-4 bg-gray-900/30 rounded-lg">
+                    <h3 className="font-medium mb-2">Event Format</h3>
+                    <p className="text-gray-400">This is an in-person event. Your NFT ticket will be required for entry.</p>
+                  </div>
+                  <div className="p-4 bg-gray-900/30 rounded-lg">
+                    <h3 className="font-medium mb-2">What to bring</h3>
+                    <p className="text-gray-400">Please ensure you have your wallet connected to display your NFT ticket at the venue.</p>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
-
-          <div>
-            <h2 className="text-xl font-semibold mb-4">About Event</h2>
-            <p className="text-gray-300 leading-relaxed">
-              Join us for an after work happy hour with the NYC AI community, Normal Computing and Air Street Capital.
-            </p>
-            <p className="text-gray-300 leading-relaxed mt-4">
-              Please RSVP here and we'll email you once we confirm your spot. Venue in Chelsea.
-            </p>
+          <div className="col-span-4">
+            <div className="sticky top-8 space-y-8">
+              <div className="p-6 bg-gray-900/30 rounded-lg">
+                <h2 className="text-[15px] font-medium uppercase tracking-wider text-gray-400 mb-4">Host</h2>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden">
+                    <img
+                      src={eventDetails?.hostedByImage as string}
+                      alt={eventDetails?.hostedBy || "Host"}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <div className="font-medium text-[15px]">{eventDetails?.hostedBy || "Host"}</div>
+                    <div className="text-[14px] text-gray-400 mt-1">Event Organizer</div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 bg-gray-900/30 rounded-lg">
+                <h2 className="text-[15px] font-medium uppercase tracking-wider text-gray-400 mb-4">Date and time</h2>
+                <div className="space-y-1">
+                  <div className="text-[15px]">{format(eventDate, "EEEE")}</div>
+                  <div className="text-[15px]">{format(eventDate, "MMMM")} {formatDay(eventDate)}, {format(eventDate, "yyyy")}</div>
+                  <div className="text-[15px] text-gray-400">{format(startTime, "h:mm a")} - {format(endTime, "h:mm a")}</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gray-900/30 rounded-lg">
+                <h2 className="text-[15px] font-medium uppercase tracking-wider text-gray-400 mb-4">Location</h2>
+                <div className="text-[15px]">
+                  {eventDetails?.location || "Location TBA"}
+                </div>
+              </div>
+              <div className="p-6 bg-gray-900/30 rounded-lg">
+                <h2 className="text-[15px] font-medium uppercase tracking-wider text-gray-400 mb-4">Quick Info</h2>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-[14px]">
+                    <span className="text-gray-400">Event Type</span>
+                    <span>In Person</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[14px]">
+                    <span className="text-gray-400">Capacity</span>
+                    <span>Limited</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

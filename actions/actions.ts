@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { events, walletDetails, nftPasses } from "@/db/schema";
+import { events, walletDetails, nftPasses, user } from "@/db/schema";
 import { auth } from "@/lib/auth"
 import { createEventSchema, joinEventSchema } from "@/lib/schema.zod";
 import { and, eq } from "drizzle-orm";
@@ -220,6 +220,39 @@ export const GetEventByID = async (id: string) => {
   }
 }
 
+export const getUserDetails = async (id: string) => {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers()
+    });
+
+    if (!session?.user) {
+      throw new Error("User not authorized");
+    }
+
+    const users = await db.select().from(user).where(eq(user.id, id));
+
+    if (users.length === 0) {
+      return {
+        message: "User not found",
+        status: 404
+      }
+    }
+
+    return {
+      status: 200,
+      user: users[0]
+    }
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    return {
+      message: "Error fetching user details",
+      error: error,
+      status: 501
+    }
+  }
+}
+
 export const JoinEvent = async (data: any) => {
   const parsedData = joinEventSchema.safeParse(data);
   if (!parsedData.success) {
@@ -267,7 +300,7 @@ export const JoinEvent = async (data: any) => {
       }
     }
 
-      // Create NFT with event metadata
+    // Create NFT with event metadata
     const eventData = event[0];
     const nftResult = await createNFT(
       {
@@ -313,6 +346,51 @@ export const JoinEvent = async (data: any) => {
     console.error("Error joining event:", error);
     return {
       message: "Error joining event",
+      error: error,
+      status: 501
+    }
+  }
+}
+
+export const getEventDetails = async (id: string) => {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers()
+    });
+
+    if (!session?.user) {
+      throw new Error("User not authorized");
+    }
+
+    const event = await db.select().from(events).where(eq(events.id, id));
+
+    if (event.length === 0) {
+      return {
+        message: "Event not found",
+        status: 404
+      }
+    }
+
+    return {
+      status: 200,
+      title: event[0].title,
+      description: event[0].description,
+      startTime: event[0].startTime,
+      endTime: event[0].endTime,
+      isTokenGated: event[0].isTokenGated,
+      location: event[0].location,
+      startDate: event[0].startDate,
+      endDate: event[0].endDate,
+      participantsCount: event[0].participantsCount,
+      hostedBy: (await getUserDetails(event[0].organiserId as string)).user?.name,
+      hostedByImage: session?.user.image
+    }
+
+
+  } catch (error) {
+    console.error("Error fetching event details:", error);
+    return {
+      message: "Error fetching event details",
       error: error,
       status: 501
     }

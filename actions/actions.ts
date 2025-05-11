@@ -396,3 +396,56 @@ export const getEventDetails = async (id: string) => {
     }
   }
 }
+
+export const getEventDetailWithNFT = async (id: string) => {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers()
+    });
+
+    if (!session?.user) {
+      throw new Error("User not authorized");
+    }
+
+    const userId = session.user.id;
+
+    // Get event details
+    const event = await db.select().from(events).where(eq(events.id, id));
+    if (event.length === 0) {
+      return {
+        message: "Event not found",
+        status: 404
+      }
+    }
+
+    // Get NFT pass details for this user and event
+    const nftPass = await db.select()
+      .from(nftPasses)
+      .where(
+        and(
+          eq(nftPasses.eventId, id),
+          eq(nftPasses.userId, userId)
+        )
+      );
+
+    // Get host details
+    const host = await getUserDetails(event[0].organiserId as string);
+
+    return {
+      status: 200,
+      event: event[0],
+      nftPass: nftPass[0] || null,
+      host: {
+        name: host.user?.name,
+        image: session.user.image
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching event detail with NFT:", error);
+    return {
+      message: "Error fetching event details",
+      error: error,
+      status: 501
+    }
+  }
+}

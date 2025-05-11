@@ -1,6 +1,6 @@
 "use client"
 
-import { GetEventByID, getEventDetails, JoinEvent, saveWalletDetails } from "@/actions/actions"
+import { GetEventByID, getEventDetails, JoinEvent, saveWalletDetails, checkEventRegistration } from "@/actions/actions"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
@@ -46,6 +46,14 @@ export default function EventDetails({ params }: { params: { id: string } }) {
       return res;
     }
   })
+
+  const { data: registrationData } = useQuery({
+    queryKey: ['registration', id],
+    queryFn: async () => {
+      const result = await checkEventRegistration(id);
+      return result;
+    }
+  });
 
   useEffect(() => {
     if (wallet.connected && wallet.publicKey) {
@@ -217,13 +225,28 @@ export default function EventDetails({ params }: { params: { id: string } }) {
               </div>
               <div>
                 <h2 className="text-[15px] font-medium uppercase tracking-wider text-gray-400 mb-4">Registration</h2>
-                {registered ? (
+                {registrationData?.isRegistered ? (
                   <div className="space-y-4">
                     <div className="inline-flex items-center px-3 py-1.5 bg-green-900/20 text-green-400 text-sm rounded-full">
                       <CheckCircleIcon className="w-4 h-4 mr-1.5" />
-                      Registration confirmed
+                      You're registered for this event
                     </div>
-                    {renderNFTDetails()}
+                    {registrationData.nftDetails && (
+                      <div className="mt-4 border border-gray-800 rounded-lg p-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-400">NFT Pass</span>
+                          <a
+                            href={`https://explorer.solana.com/address/${registrationData.nftDetails.mintTXHash}?cluster=devnet`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-blue-400 hover:text-blue-300"
+                          >
+                            View on Explorer
+                            <ExternalLinkIcon className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">

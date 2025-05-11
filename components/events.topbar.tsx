@@ -1,10 +1,15 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-export default function EventsBar() {
+interface EventsBarProps {
+  activeTab: 'upcoming' | 'past';
+  onTabChange: (value: 'upcoming' | 'past') => void;
+}
+
+export default function EventsBar({ activeTab, onTabChange }: EventsBarProps) {
   return (
-    <div className="flex items-center justify-between py-4 px-6">
+    <div className="flex items-center mt-20 justify-between py-4 px-6">
       <h1 className="text-3xl font-normal text-white">Events</h1>
-      <Tabs defaultValue="upcoming">
+      <Tabs defaultValue={activeTab} onValueChange={(value) => onTabChange(value as 'upcoming' | 'past')}>
         <TabsList className="bg-[#2a2229] p-1 rounded-lg">
           <TabsTrigger
             value="upcoming"

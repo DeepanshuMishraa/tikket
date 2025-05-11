@@ -3,12 +3,13 @@ export interface Event {
   title: string;
   description: string;
   startTime: Date;
-  organiserId: string | null;
   endTime: Date | null;
+  startDate: Date;
+  endDate: Date;
+  organiserId: string | null;
   isTokenGated: boolean;
   createdAt: Date;
   participantsCount: string;
-  participantId: string | null;
   location: string | null;
 }
 

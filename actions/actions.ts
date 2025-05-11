@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { events, walletDetails, nftPasses, user } from "@/db/schema";
+import { events, walletDetails, nftPasses, user, eventParticipants } from "@/db/schema";
 import { auth } from "@/lib/auth"
 import { createEventSchema, joinEventSchema } from "@/lib/schema.zod";
 import { and, eq } from "drizzle-orm";
@@ -23,9 +23,16 @@ export const getEventsForUser = async () => {
 
     const userId = session?.user.id;
 
-    const event = await db.select().from(events).where(eq(events.participantId, userId));
+    // Get events through eventParticipants table
+    const userEvents = await db
+      .select({
+        event: events,
+      })
+      .from(eventParticipants)
+      .innerJoin(events, eq(events.id, eventParticipants.eventId))
+      .where(eq(eventParticipants.userId, userId));
 
-    if (event.length === 0) {
+    if (userEvents.length === 0) {
       return {
         message: "No events found for this user",
         events: []
@@ -34,7 +41,7 @@ export const getEventsForUser = async () => {
 
     return {
       message: "Events fetched successfully",
-      events: event
+      events: userEvents.map(ue => ue.event)
     }
   } catch (error) {
     console.error("Error fetching events for user:", error);
@@ -69,19 +76,28 @@ export const CreateEvent = async (data: unknown) => {
     const { title, description, startTime, endTime, isTokenGated, location, startDate, endDate } = parsedData.data;
     const eventId = uuid();
 
+    // Remove participantId from events.values
     await db.insert(events).values({
+      id: eventId,
       title,
       description,
       startTime,
       endTime,
       isTokenGated,
       location,
-      id: eventId,
       organiserId: userId,
       participantsCount: "0",
-      participantId: userId,
       startDate,
       endDate
+    });
+
+    // Add organizer as first participant
+    await db.insert(eventParticipants).values({
+      id: uuid(),
+      eventId: eventId,
+      userId: userId,
+      isRegistered: true,
+      createdAt: new Date(),
     });
 
     return {
@@ -97,7 +113,6 @@ export const CreateEvent = async (data: unknown) => {
         location,
         organiserId: userId,
         participantsCount: "0",
-        participantId: userId,
         createdAt: new Date()
       }
     }
@@ -289,11 +304,16 @@ export const JoinEvent = async (data: any) => {
         status: 404
       }
     };
-    const existingPass = await db.select()
-      .from(nftPasses)
-      .where(and(eq(nftPasses.eventId, eventId), eq(nftPasses.userId, userId)));
 
-    if (existingPass.length > 0) {
+    // Check if user is already registered
+    const existingRegistration = await db.select()
+      .from(eventParticipants)
+      .where(and(
+        eq(eventParticipants.eventId, eventId),
+        eq(eventParticipants.userId, userId)
+      ));
+
+    if (existingRegistration.length > 0) {
       return {
         message: "You have already joined this event",
         status: 400
@@ -314,7 +334,6 @@ export const JoinEvent = async (data: any) => {
       path.join(process.cwd(), "public", "nf.png")
     );
 
-    // Save NFT details to database
     const nftPassId = uuid();
     await db.insert(nftPasses).values({
       id: nftPassId,
@@ -326,7 +345,14 @@ export const JoinEvent = async (data: any) => {
       createdAt: new Date(),
     });
 
-    // Update event participants count
+    await db.insert(eventParticipants).values({
+      id: uuid(),
+      eventId: eventId,
+      userId: userId,
+      isRegistered: true,
+      createdAt: new Date(),
+    });
+
     const currentCount = parseInt(eventData.participantsCount) || 0;
     await db.update(events)
       .set({ participantsCount: (currentCount + 1).toString() })
@@ -449,3 +475,45 @@ export const getEventDetailWithNFT = async (id: string) => {
     }
   }
 }
+
+export const checkEventRegistration = async (eventId: string) => {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers()
+    });
+
+    if (!session?.user) {
+      throw new Error("User not authorized");
+    }
+
+    const userId = session.user.id;
+
+    // Check both eventParticipants and nftPasses
+    const registration = await db.select()
+      .from(eventParticipants)
+      .where(and(
+        eq(eventParticipants.eventId, eventId),
+        eq(eventParticipants.userId, userId)
+      ));
+
+    const nftPass = await db.select()
+      .from(nftPasses)
+      .where(and(
+        eq(nftPasses.eventId, eventId),
+        eq(nftPasses.userId, userId)
+      ));
+
+    return {
+      status: 200,
+      isRegistered: registration.length > 0,
+      nftDetails: nftPass[0] || null
+    };
+  } catch (error) {
+    console.error("Error checking registration:", error);
+    return {
+      status: 500,
+      isRegistered: false,
+      nftDetails: null
+    };
+  }
+};

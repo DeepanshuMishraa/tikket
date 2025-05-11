@@ -154,7 +154,7 @@ export default function ViewEvent({ params }: { params: { id: string } }) {
                   <div className="aspect-w-1 aspect-h-1 bg-black/20 rounded-xl overflow-hidden shadow-inner group relative border border-white/10">
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 via-transparent to-blue-600/30 opacity-70 group-hover:opacity-100 transition-opacity duration-300" />
                     <Shield className="w-2/5 h-2/5 text-purple-400/60 absolute inset-0 m-auto opacity-60 group-hover:opacity-80 transition-all duration-300 transform group-hover:scale-110" />
-                    <Image src="/nf.png" alt='NFT Pass' layout='fill' objectFit='cover' />
+                    <Image src={'/nf.png'} alt='NFT Pass' layout='fill' objectFit='cover' />
                   </div>
 
                   <div className="space-y-4">

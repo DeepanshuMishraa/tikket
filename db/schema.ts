@@ -7,7 +7,8 @@ export const user = pgTable("user", {
   emailVerified: boolean('email_verified').notNull(),
   image: text('image'),
   createdAt: timestamp('created_at').notNull(),
-  updatedAt: timestamp('updated_at').notNull()
+  updatedAt: timestamp('updated_at').notNull(),
+  isRegistered: boolean('is_registered').notNull().default(false)
 });
 
 export const session = pgTable("session", {
@@ -58,8 +59,15 @@ export const events = pgTable("events", {
   isTokenGated: boolean('is_token_gated').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   participantsCount: text('participants_count').notNull().default('0'),
-  participantId: text('participant_id').references(() => user.id, { onDelete: 'cascade' }),
   location: text('location'),
+});
+
+export const eventParticipants = pgTable('event_participants', {
+  id: text('id').primaryKey(),
+  eventId: text('event_id').references(() => events.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+  isRegistered: boolean('is_registered').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 export const checkIn = pgTable("check_in", {
@@ -78,8 +86,6 @@ export const nftPasses = pgTable('nft_passes', {
   claimed: boolean('claimed').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
-
-
 
 export const walletDetails = pgTable('wallet_details', {
   id: text('id').primaryKey(),

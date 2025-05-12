@@ -21,7 +21,7 @@ import { CreateEvent } from "@/actions/actions"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { createEventSchema } from "@/lib/schema.zod"
 
-type FormSchema = z.infer<typeof createEventSchema>;
+type FormData = z.infer<typeof createEventSchema>;
 
 type TimeSlot = {
   value: string;
@@ -39,23 +39,21 @@ const timeSlots: TimeSlot[] = Array.from({ length: 24 * 4 }, (_, i) => {
 });
 
 export default function CreateEventForm() {
-  const form = useForm<FormSchema>({
-    resolver: zodResolver(createEventSchema) as any, 
+  const form = useForm<FormData>({
+    resolver: zodResolver(createEventSchema) as any,
     defaultValues: {
       title: "",
       description: "",
       location: "",
       isTokenGated: false,
-      startDate: new Date(),
-      endDate: new Date(),
       startTime: new Date(),
       endTime: new Date()
     }
   });
 
   const mutation = useMutation({
-    mutationFn: async (data: FormSchema) => {
-      const response = await CreateEvent(data)
+    mutationFn: async (values: FormData) => {
+      const response = await CreateEvent(values)
       if (response.status !== 200) {
         toast.error("Something went wrong")
         return
@@ -64,8 +62,16 @@ export default function CreateEventForm() {
     }
   })
 
-  const onSubmit = (data: FormSchema) => {
-    mutation.mutate(data)
+  const onSubmit = (values: FormData) => {
+    // Ensure we're using the selected dates and times
+    const startDateTime = values.startTime;
+    const endDateTime = values.endTime;
+
+    mutation.mutate({
+      ...values,
+      startTime: startDateTime,
+      endTime: endDateTime
+    });
   }
 
   return (
@@ -125,21 +131,21 @@ export default function CreateEventForm() {
                               !field.value && "text-[#9b8e78]",
                             )}
                           >
-                            {field.value ? format(new Date(field.value), "EEE, MMM d") : "Select date"}
+                            {field.value ? format(field.value, "EEE, MMM d") : "Select date"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 bg-[#2a2217] border-[#3a3227]">
                           <Calendar
                             mode="single"
-                            selected={new Date(field.value)}
+                            selected={field.value}
                             onSelect={(date) => {
                               if (date) {
-                                const currentTime = new Date(field.value)
+                                const currentTime = field.value;
                                 const newDate = set(date, {
                                   hours: currentTime.getHours(),
                                   minutes: currentTime.getMinutes()
-                                })
-                                field.onChange(newDate.toISOString())
+                                });
+                                field.onChange(newDate);
                               }
                             }}
                             initialFocus
@@ -148,12 +154,12 @@ export default function CreateEventForm() {
                         </PopoverContent>
                       </Popover>
                       <Select
-                        value={format(new Date(field.value), "HH:mm")}
+                        value={format(field.value, "HH:mm")}
                         onValueChange={(time: string) => {
-                          const [hours, minutes] = time.split(":").map(Number)
-                          const currentDate = new Date(field.value)
-                          const newDate = set(currentDate, { hours, minutes })
-                          field.onChange(newDate.toISOString())
+                          const [hours, minutes] = time.split(":").map(Number);
+                          const currentDate = field.value;
+                          const newDate = set(currentDate, { hours, minutes });
+                          field.onChange(newDate);
                         }}
                       >
                         <SelectTrigger className="w-32 bg-transparent border-0 focus:ring-0 text-right">
@@ -197,21 +203,21 @@ export default function CreateEventForm() {
                               !field.value && "text-[#9b8e78]",
                             )}
                           >
-                            {field.value ? format(new Date(field.value), "EEE, MMM d") : "Select date"}
+                            {field.value ? format(field.value, "EEE, MMM d") : "Select date"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 bg-[#2a2217] border-[#3a3227]">
                           <Calendar
                             mode="single"
-                            selected={new Date(field.value)}
+                            selected={field.value}
                             onSelect={(date) => {
                               if (date) {
-                                const currentTime = new Date(field.value)
+                                const currentTime = field.value;
                                 const newDate = set(date, {
                                   hours: currentTime.getHours(),
                                   minutes: currentTime.getMinutes()
-                                })
-                                field.onChange(newDate.toISOString())
+                                });
+                                field.onChange(newDate);
                               }
                             }}
                             initialFocus
@@ -220,12 +226,12 @@ export default function CreateEventForm() {
                         </PopoverContent>
                       </Popover>
                       <Select
-                        value={format(new Date(field.value), "HH:mm")}
+                        value={format(field.value, "HH:mm")}
                         onValueChange={(time: string) => {
-                          const [hours, minutes] = time.split(":").map(Number)
-                          const currentDate = new Date(field.value)
-                          const newDate = set(currentDate, { hours, minutes })
-                          field.onChange(newDate.toISOString())
+                          const [hours, minutes] = time.split(":").map(Number);
+                          const currentDate = field.value;
+                          const newDate = set(currentDate, { hours, minutes });
+                          field.onChange(newDate);
                         }}
                       >
                         <SelectTrigger className="w-32 bg-transparent border-0 focus:ring-0 text-right">
@@ -341,17 +347,6 @@ export default function CreateEventForm() {
                 </FormItem>
               )}
             />
-
-            <div className="bg-[#2a2217] rounded-lg p-4 mb-8 flex items-center justify-between">
-              <div className="flex items-center">
-                <Users className="w-5 h-5 text-gray-400 mr-3" />
-                <div>Capacity</div>
-              </div>
-              <div className="flex items-center text-gray-400">
-                <div className="mr-2">Unlimited</div>
-                <Edit className="w-4 h-4" />
-              </div>
-            </div>
           </div>
 
           <Button

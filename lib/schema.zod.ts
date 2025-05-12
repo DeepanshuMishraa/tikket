@@ -5,10 +5,8 @@ export const createEventSchema = z.object({
   description: z.string().min(1, "Description is required"),
   location: z.string().min(1, "Location is required"),
   isTokenGated: z.boolean().default(false),
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date(),
-  startTime: z.coerce.date(),
-  endTime: z.coerce.date()
+  startTime: z.date().default(() => new Date()),
+  endTime: z.date().default(() => new Date())
 });
 
 

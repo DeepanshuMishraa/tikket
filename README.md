@@ -47,7 +47,7 @@ Tikket is a modern event management platform that combines traditional event org
 1. Clone the repository
 2. Install dependencies:
    ```bash
-   npm install
+   bun install
    ```
 3. Set up environment variables:
    - Database configuration
@@ -56,7 +56,7 @@ Tikket is a modern event management platform that combines traditional event org
 
 4. Run the development server:
    ```bash
-   npm run dev
+   bun run dev
    ```
 
 ## Event Types
@@ -97,7 +97,4 @@ Tikket is a modern event management platform that combines traditional event org
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
-
-[Add your license here]
 

@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="flex items-center justify-between w-full">
         <nav className="flex space-x-6">
           <Link href="/" className="font-semibold opacity-90 hover:opacity-100 transition-opacity">Tikket</Link>
-          <Link href="/" className="opacity-70 hover:opacity-100 transition-opacity">What's new</Link>
+          <Link href="/" className="opacity-70 hover:opacity-100 transition-opacity">What&apos;s new</Link>
           <Link href="/" className="opacity-70 hover:opacity-100 transition-opacity">Discover</Link>
           <Link href="/" className="opacity-70 hover:opacity-100 transition-opacity">Help</Link>
         </nav>

@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tikket - Event Management with NFT Ticketing
+
+Tikket is a modern event management platform that combines traditional event organization with blockchain technology, offering NFT-based ticketing for enhanced security and authenticity.
+
+## Features
+
+- **Event Creation & Management**
+  - Create and manage events with detailed information
+  - Set event dates, times, and locations
+  - Track participant counts
+  - Flexible event options (free or token-gated)
+
+- **NFT Ticketing System**
+  - Token-gated events with NFT passes
+  - Solana blockchain integration
+  - Verifiable ticket ownership
+  - NFT pass explorer integration
+
+- **User Features**
+  - Easy event registration
+  - View upcoming and past events
+  - Manage event registrations
+  - Wallet integration for NFT tickets
+
+## Technology Stack
+
+- **Frontend**
+  - Next.js (React)
+  - TailwindCSS for styling
+  - Tanstack Query for data fetching
+  - Date-fns for date manipulation
+
+- **Blockchain Integration**
+  - Solana Web3.js
+  - Metaplex Foundation tools
+  - NFT metadata handling
+  - Wallet adapter integration
+
+- **Backend**
+  - Server-side actions
+  - Database integration with Drizzle ORM
+  - Secure authentication
+  - File handling for NFT images
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up environment variables:
+   - Database configuration
+   - Solana network endpoints
+   - Authentication secrets
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Event Types
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Standard Events
+- Free registration
+- Basic event details
+- Participant tracking
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Token-Gated Events
+- NFT pass required
+- Blockchain-verified attendance
+- Unique digital collectibles
+- Solana Explorer integration
 
-## Learn More
+## NFT Features
 
-To learn more about Next.js, take a look at the following resources:
+- **Programmable NFTs**
+  - Event-specific metadata
+  - Start and end date attributes
+  - Location information
+  - Unique event identifiers
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **NFT Management**
+  - Mint transaction tracking
+  - Token ID verification
+  - Explorer integration
+  - Wallet compatibility
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Security
 
-## Deploy on Vercel
+- Secure user authentication
+- Blockchain-based verification
+- Protected event access
+- Wallet signature verification
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+[Add your license here]
+
